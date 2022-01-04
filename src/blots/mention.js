@@ -3,13 +3,9 @@ import Quill from "quill";
 const Embed = Quill.import("blots/embed");
 
 class MentionBlot extends Embed {
-  constructor(scroll, node) {
-    super(scroll, node);
-    this.clickHandler = null;
-  }
-
   static create(data) {
     const node = super.create();
+    // prefix character
     const denotationChar = document.createElement("span");
     denotationChar.className = "ql-mention-denotation-char";
     denotationChar.innerHTML = data.denotationChar;
@@ -28,8 +24,6 @@ class MentionBlot extends Embed {
     AndroidBackspaceFix.setAttribute("style", "display: inline-block; height: 1px; width: 1px; overflow: hidden; ");
 
     node.appendChild(denotationChar);
-    // node.innerHTML += data.value;
-
     node.appendChild(dataContainer);
     node.appendChild(AndroidBackspaceFix);
 
@@ -52,29 +46,6 @@ class MentionBlot extends Embed {
 
   static value(domNode) {
     return domNode.dataset;
-  }
-
-  attach() {
-    super.attach();
-    this.clickHandler = e => {
-      const event = new Event("mention-clicked", {
-        bubbles: true,
-        cancelable: true
-      });
-      event.value = Object.assign({}, this.domNode.dataset);
-      event.event = e;
-      window.dispatchEvent(event);
-      e.preventDefault();
-    };
-    this.domNode.addEventListener("click", this.clickHandler, false);
-  }
-
-  detach() {
-    super.detach();
-    if (this.clickHandler) {
-      this.domNode.removeEventListener("click", this.clickHandler);
-      this.clickHandler = null;
-    }
   }
 
   // android Gboard backspace does not fire onkeypress events, resulting in the caret
