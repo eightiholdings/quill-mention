@@ -8,6 +8,7 @@
   "author": "Fredrik Sundqvist <fsundqvist@gmail.com>",
   "license": "MIT",
   "files": [
+    "src",
     "dist",
     "LICENSE",
     "README.md"
