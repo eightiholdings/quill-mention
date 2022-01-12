@@ -1,3 +1,20 @@
+# Note about this forked repo
+This is a forked repo to fix a bug experienced by **Android** users where the keyboard keeps closing whenever the user attempts to backspace a mention object on the quill editor. This is because the contentEditable is being treated differently from the other platforms.
+
+The [issue](https://github.com/afry/quill-mention/issues/40) was reported in 2020, which there is no further action by the publisher.
+
+The changes implemented are referenced from this [comment](https://github.com/afry/quill-mention/issues/40#issuecomment-717968462).
+
+For more information on this package, please refer to the official [Quill Mention](https://github.com/afry/quill-mention) instead.
+
+## Version
+As of 20 October 2021, the version that this repo was forked out is 3.0.4.
+
+## Getting Started
+Simply `npm install` to update the packages as the `package.json` has this forked repo added to it.
+
+---
+
 ![Quill Mention](docs/static/quill-mention.png "Quill Mention")
 
 # Quill Mention
@@ -164,6 +181,7 @@ const quill = new Quill("#editor", {
 | `spaceAfterInsert`                            | `true`                                                           | Whether or not insert 1 space after mention block in text                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `positioningStrategy`                         | `'absolute'`                                                     | Options are `'normal'` and `'fixed'`. When `'fixed'`, the menu will be appended to the body and use fixed positioning. Use this if the menu is clipped by a parent element that's using `overflow:hidden|scroll`.                                                                                                                                                                                                                                                                   |
 | `renderLoading`                               | `function`                                                       | A function that returns the HTML for a loading message during async calls from `source`. The default functions returns `null` to prevent a loading message.                                                                                                                                                                                                                                                                                                                         |
+| `selectKeys`                                  | `[13]`                                                           | An array of keyboard key codes that will trigger the select action for the mention dropdown. Default is ENTER key. See [this reference](http://gcctech.org/csc/javascript/javascript_keycodes.htm) for a list of numbers for each keyboard key.                                                                                                                                                                                                                                     |
 
 ### Methods
 
