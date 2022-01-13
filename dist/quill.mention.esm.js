@@ -77,7 +77,7 @@ function _isNativeReflectConstruct() {
   if (typeof Proxy === "function") return true;
 
   try {
-    Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {}));
+    Date.prototype.toString.call(Reflect.construct(Date, [], function () {}));
     return true;
   } catch (e) {
     return false;
@@ -149,80 +149,6 @@ function _get(target, property, receiver) {
   return _get(target, property, receiver || target);
 }
 
-function _unsupportedIterableToArray(o, minLen) {
-  if (!o) return;
-  if (typeof o === "string") return _arrayLikeToArray(o, minLen);
-  var n = Object.prototype.toString.call(o).slice(8, -1);
-  if (n === "Object" && o.constructor) n = o.constructor.name;
-  if (n === "Map" || n === "Set") return Array.from(o);
-  if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
-}
-
-function _arrayLikeToArray(arr, len) {
-  if (len == null || len > arr.length) len = arr.length;
-
-  for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
-
-  return arr2;
-}
-
-function _createForOfIteratorHelper(o, allowArrayLike) {
-  var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-  if (!it) {
-    if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
-      if (it) o = it;
-      var i = 0;
-
-      var F = function () {};
-
-      return {
-        s: F,
-        n: function () {
-          if (i >= o.length) return {
-            done: true
-          };
-          return {
-            done: false,
-            value: o[i++]
-          };
-        },
-        e: function (e) {
-          throw e;
-        },
-        f: F
-      };
-    }
-
-    throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
-  var normalCompletion = true,
-      didErr = false,
-      err;
-  return {
-    s: function () {
-      it = it.call(o);
-    },
-    n: function () {
-      var step = it.next();
-      normalCompletion = step.done;
-      return step;
-    },
-    e: function (e) {
-      didErr = true;
-      err = e;
-    },
-    f: function () {
-      try {
-        if (!normalCompletion && it.return != null) it.return();
-      } finally {
-        if (didErr) throw err;
-      }
-    }
-  };
-}
-
 var Keys = {
   TAB: 9,
   ENTER: 13,
@@ -287,75 +213,34 @@ var MentionBlot = /*#__PURE__*/function (_Embed) {
 
   var _super = _createSuper(MentionBlot);
 
-  function MentionBlot(scroll, node) {
-    var _this;
-
+  function MentionBlot() {
     _classCallCheck(this, MentionBlot);
 
-    _this = _super.call(this, scroll, node);
-    _this.clickHandler = null;
-    return _this;
+    return _super.apply(this, arguments);
   }
 
   _createClass(MentionBlot, [{
-    key: "attach",
-    value: function attach() {
-      var _this2 = this;
-
-      _get(_getPrototypeOf(MentionBlot.prototype), "attach", this).call(this);
-
-      this.clickHandler = function (e) {
-        var event = new Event("mention-clicked", {
-          bubbles: true,
-          cancelable: true
-        });
-        event.value = _extends({}, _this2.domNode.dataset);
-        event.event = e;
-        window.dispatchEvent(event);
-        e.preventDefault();
-      };
-
-      this.domNode.addEventListener("click", this.clickHandler, false);
-    }
-  }, {
-    key: "detach",
-    value: function detach() {
-      _get(_getPrototypeOf(MentionBlot.prototype), "detach", this).call(this);
-
-      if (this.clickHandler) {
-        this.domNode.removeEventListener("click", this.clickHandler);
-        this.clickHandler = null;
-      }
-    } // android Gboard backspace does not fire onkeypress events, resulting in the caret
-    // breaking into the read-only blot element. - so we need to handle edit events inside the blot child elements as well
-
-  }, {
     key: "update",
     value: function update(mutations, context) {
-      var _this3 = this;
+      var _this = this;
 
-      // `childList` mutations are not handled on Quill
-      // see `update` implementation on:
-      // https://github.com/quilljs/quill/blob/master/blots/embed.js
-      // any attempt at modifying the inner content will just remove it
-      // (since we cant block any modifiications completely, this is the "lesser evil" / graceful fallback)
-      var _iterator = _createForOfIteratorHelper(mutations),
-          _step;
+      mutations.forEach(function (mutation) {
+        if (mutation.type === 'childList' && (Array.from(mutation.removedNodes).includes(_this.leftGuard) || Array.from(mutation.removedNodes).includes(_this.rightGuard))) {
+          var tag;
 
-      try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var mutation = _step.value;
-          if (mutation.type === "attributes" && mutation.attributeName === "contenteditable") continue;
-          setTimeout(function () {
-            return _this3.remove();
-          }, 0);
-          return;
+          if (mutation.previousSibling) {
+            tag = mutation.previousSibling.innerText;
+          } else if (mutation.nextSibling) {
+            tag = mutation.nextSibling.innerText;
+          }
+
+          if (tag) {
+            _get(_getPrototypeOf(MentionBlot.prototype), "replaceWith", _this).call(_this, 'text', tag);
+          }
         }
-      } catch (err) {
-        _iterator.e(err);
-      } finally {
-        _iterator.f();
-      }
+      });
+
+      _get(_getPrototypeOf(MentionBlot.prototype), "update", this).call(this, mutations, context);
     }
   }], [{
     key: "create",
@@ -365,31 +250,13 @@ var MentionBlot = /*#__PURE__*/function (_Embed) {
       var denotationChar = document.createElement("span");
       denotationChar.className = "ql-mention-denotation-char";
       denotationChar.innerHTML = data.denotationChar;
-      denotationChar.setAttribute("contenteditable", false); // Content
-
-      var dataContainer = document.createElement("span");
-      dataContainer.innerHTML = data.value;
-      dataContainer.setAttribute("contenteditable", false); // when android keyboard reaches a `contenteditable=false` block, it automatically closes.
-      // avoid that by adding a buffer "space" without the attribute.
-
-      var AndroidBackspaceFix = document.createElement("span");
-      AndroidBackspaceFix.innerHTML = "&nbsp;"; // it needs to be "visible" in order to work - so limit to minimal size.
-
-      AndroidBackspaceFix.setAttribute("style", "display: inline-block; height: 1px; width: 1px; overflow: hidden; ");
-      node.appendChild(denotationChar); // node.innerHTML += data.value;
-
-      node.appendChild(dataContainer);
-      node.appendChild(AndroidBackspaceFix);
+      node.appendChild(denotationChar);
+      node.innerHTML += data.value;
       return MentionBlot.setDataValues(node, data);
     }
   }, {
     key: "setDataValues",
     value: function setDataValues(element, data) {
-      // the extended Embed constructor has added contenteditable=false to the outermost span,
-      // we want to override that in favour of ones applied to the child elements inside create()
-      setTimeout(function () {
-        element.getElementsByTagName("span")[0].setAttribute("contenteditable", "inherit");
-      }, 0);
       var domNode = element;
       Object.keys(data).forEach(function (key) {
         domNode.dataset[key] = data[key];
@@ -413,8 +280,6 @@ Quill.register(MentionBlot);
 
 var Mention = /*#__PURE__*/function () {
   function Mention(quill, options) {
-    var _this = this;
-
     _classCallCheck(this, Mention);
 
     this.isOpen = false;
@@ -464,8 +329,7 @@ var Mention = /*#__PURE__*/function () {
       listItemClass: "ql-mention-list-item",
       mentionContainerClass: "ql-mention-list-container",
       mentionListClass: "ql-mention-list",
-      spaceAfterInsert: true,
-      selectKeys: [Keys.ENTER]
+      spaceAfterInsert: true
     };
 
     _extends(this.options, options, {
@@ -483,42 +347,17 @@ var Mention = /*#__PURE__*/function () {
     }
 
     this.mentionList = document.createElement("ul");
-    this.mentionList.id = 'quill-mention-list';
-    quill.root.setAttribute('aria-owns', 'quill-mention-list');
     this.mentionList.className = this.options.mentionListClass ? this.options.mentionListClass : "";
     this.mentionContainer.appendChild(this.mentionList);
     quill.on("text-change", this.onTextChange.bind(this));
-    quill.on("selection-change", this.onSelectionChange.bind(this)); //Pasting doesn't fire selection-change after the pasted text is
-    //inserted, so here we manually trigger one
-
-    quill.container.addEventListener("paste", function () {
-      setTimeout(function () {
-        var range = quill.getSelection();
-
-        _this.onSelectionChange(range);
-      });
-    });
+    quill.on("selection-change", this.onSelectionChange.bind(this));
     quill.keyboard.addBinding({
       key: Keys.TAB
     }, this.selectHandler.bind(this));
     quill.keyboard.bindings[Keys.TAB].unshift(quill.keyboard.bindings[Keys.TAB].pop());
-
-    var _iterator = _createForOfIteratorHelper(this.options.selectKeys),
-        _step;
-
-    try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var selectKey = _step.value;
-        quill.keyboard.addBinding({
-          key: selectKey
-        }, this.selectHandler.bind(this));
-      }
-    } catch (err) {
-      _iterator.e(err);
-    } finally {
-      _iterator.f();
-    }
-
+    quill.keyboard.addBinding({
+      key: Keys.ENTER
+    }, this.selectHandler.bind(this));
     quill.keyboard.bindings[Keys.ENTER].unshift(quill.keyboard.bindings[Keys.ENTER].pop());
     quill.keyboard.addBinding({
       key: Keys.ESCAPE
@@ -596,7 +435,6 @@ var Mention = /*#__PURE__*/function () {
       this.mentionContainer.style.display = "none";
       this.mentionContainer.remove();
       this.setIsOpen(false);
-      this.quill.root.removeAttribute('aria-activedescendant');
     }
   }, {
     key: "highlightItem",
@@ -612,7 +450,6 @@ var Mention = /*#__PURE__*/function () {
       }
 
       this.mentionList.childNodes[this.itemIndex].classList.add("selected");
-      this.quill.root.setAttribute('aria-activedescendant', this.mentionList.childNodes[this.itemIndex].id);
 
       if (scrollItemInView) {
         var itemHeight = this.mentionList.childNodes[this.itemIndex].offsetHeight;
@@ -650,7 +487,7 @@ var Mention = /*#__PURE__*/function () {
   }, {
     key: "selectItem",
     value: function selectItem() {
-      var _this2 = this;
+      var _this = this;
 
       if (this.itemIndex === -1) {
         return;
@@ -663,7 +500,7 @@ var Mention = /*#__PURE__*/function () {
       }
 
       this.options.onSelect(data, function (asyncData) {
-        _this2.insertItem(asyncData);
+        _this.insertItem(asyncData);
       });
       this.hideMentionList();
     }
@@ -785,12 +622,10 @@ var Mention = /*#__PURE__*/function () {
 
         for (var i = 0; i < data.length; i += 1) {
           var li = document.createElement("li");
-          li.id = 'quill-mention-item-' + i;
           li.className = this.options.listItemClass ? this.options.listItemClass : "";
 
           if (data[i].disabled) {
             li.className += " disabled";
-            li.setAttribute('aria-hidden', 'true');
           } else if (initialSelection === -1) {
             initialSelection = i;
           }
@@ -903,7 +738,7 @@ var Mention = /*#__PURE__*/function () {
   }, {
     key: "setMentionContainerPosition_Normal",
     value: function setMentionContainerPosition_Normal() {
-      var _this3 = this;
+      var _this2 = this;
 
       var containerPos = this.quill.container.getBoundingClientRect();
       var mentionCharPos = this.quill.getBounds(this.mentionCharPos);
@@ -967,15 +802,15 @@ var Mention = /*#__PURE__*/function () {
 
       if (topPos >= 0) {
         this.options.mentionContainerClass.split(' ').forEach(function (className) {
-          _this3.mentionContainer.classList.add("".concat(className, "-bottom"));
+          _this2.mentionContainer.classList.add("".concat(className, "-bottom"));
 
-          _this3.mentionContainer.classList.remove("".concat(className, "-top"));
+          _this2.mentionContainer.classList.remove("".concat(className, "-top"));
         });
       } else {
         this.options.mentionContainerClass.split(' ').forEach(function (className) {
-          _this3.mentionContainer.classList.add("".concat(className, "-top"));
+          _this2.mentionContainer.classList.add("".concat(className, "-top"));
 
-          _this3.mentionContainer.classList.remove("".concat(className, "-bottom"));
+          _this2.mentionContainer.classList.remove("".concat(className, "-bottom"));
         });
       }
 
@@ -986,7 +821,7 @@ var Mention = /*#__PURE__*/function () {
   }, {
     key: "setMentionContainerPosition_Fixed",
     value: function setMentionContainerPosition_Fixed() {
-      var _this4 = this;
+      var _this3 = this;
 
       this.mentionContainer.style.position = "fixed";
       this.mentionContainer.style.height = null;
@@ -1039,9 +874,9 @@ var Mention = /*#__PURE__*/function () {
         }
 
         this.options.mentionContainerClass.split(" ").forEach(function (className) {
-          _this4.mentionContainer.classList.add("".concat(className, "-bottom"));
+          _this3.mentionContainer.classList.add("".concat(className, "-bottom"));
 
-          _this4.mentionContainer.classList.remove("".concat(className, "-top"));
+          _this3.mentionContainer.classList.remove("".concat(className, "-top"));
         });
       } else {
         topPos = relativeToPos.top - this.mentionContainer.offsetHeight;
@@ -1054,9 +889,9 @@ var Mention = /*#__PURE__*/function () {
         }
 
         this.options.mentionContainerClass.split(" ").forEach(function (className) {
-          _this4.mentionContainer.classList.add("".concat(className, "-top"));
+          _this3.mentionContainer.classList.add("".concat(className, "-top"));
 
-          _this4.mentionContainer.classList.remove("".concat(className, "-bottom"));
+          _this3.mentionContainer.classList.remove("".concat(className, "-bottom"));
         });
       }
 
@@ -1074,7 +909,7 @@ var Mention = /*#__PURE__*/function () {
   }, {
     key: "onSomethingChange",
     value: function onSomethingChange() {
-      var _this5 = this;
+      var _this4 = this;
 
       var range = this.quill.getSelection();
       if (range == null) return;
@@ -1105,9 +940,9 @@ var Mention = /*#__PURE__*/function () {
               return;
             }
 
-            _this5.existingSourceExecutionToken = null;
+            _this4.existingSourceExecutionToken = null;
 
-            _this5.renderList(mentionChar, data, searchTerm);
+            _this4.renderList(mentionChar, data, searchTerm);
           }, mentionChar);
         } else {
           this.hideMentionList();
